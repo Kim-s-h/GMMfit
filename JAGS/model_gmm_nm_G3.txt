@@ -1,0 +1,70 @@
+#-------------------------------------------------------------#
+# Model: Growth mixture model using normally distributed error
+#--------------------------------------------------------------#
+model {
+      ########################
+      # Model specification for linear growth curve model
+      ########################
+      for (i in 1:N)  {
+          # --------- Class membership ---------
+           mem[i] ~ dcat(lambda[1:3])
+
+          for(t in 1:Time) {
+               y[i,t] ~ dnorm(muy[i,t], pre_sig2)
+               muy[i,t] <- LS[i,1]+(t-1)*LS[i,2]
+               #log-likelihood
+               loglik[i,t] <- logdensity.norm(y[i,t], muy[i,t], pre_sig2)
+			
+          } # t
+
+        LS[i,1:2]  ~ dmnorm(beta[mem[i],1:2], Inv_cov[1:2,1:2])
+        u[i,1:2] <- LS[i,1:2] - beta[mem[i],1:2]
+
+      } # i
+
+      ########################
+      # priors 
+      ########################
+
+      # --------- pre_sig2 ---------
+      pre_sig2 ~ dgamma(0.01, 0.01)
+      sig2 <- 1/pre_sig2
+
+      # --------- beta ---------
+      # Intercept
+      beta[1,1] ~ dnorm(0, 0.001)I(beta[2,1],)
+      beta[2,1] ~ dnorm(0, 0.001)I(beta[3,1],)
+      beta[3,1] ~ dnorm(0, 0.001)
+      # Slope
+      beta[1,2] ~ dnorm(0, 0.001)
+      beta[2,2] ~ dnorm(0, 0.001)
+      beta[3,2] ~ dnorm(0, 0.001)
+
+      # --------- Inv_cov ---------
+      Inv_cov[1:2,1:2]~dwish(R[1:2,1:2], 2)
+      Cov_b <- inverse(Inv_cov[1:2,1:2])
+      R[1,1]<-1
+      R[2,2]<-1
+      R[2,1]<-R[1,2]
+      R[1,2]<-0
+
+      # --------- lambda ---------
+	  lambda[1:3] ~ ddirich(alpha[1:3])
+
+      # --------- reorganize model parameters ---------
+
+      par[1]   <- beta[1,1]
+      par[2]   <- beta[1,2]
+      par[3]   <- beta[2,1]
+      par[4]   <- beta[2,2]
+      par[5]   <- beta[3,1]
+      par[6]   <- beta[3,2]
+      par[7]   <- Cov_b[1,1]
+      par[8]   <- Cov_b[1,2]
+      par[9]   <- Cov_b[2,2]
+      par[10]   <- lambda[1]
+      par[11]   <- lambda[2]
+      par[12]   <- lambda[3]
+      par[13] <- sig2
+
+} # model

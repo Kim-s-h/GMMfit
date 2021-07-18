@@ -1,0 +1,53 @@
+#-------------------------------------------------------------#
+#Model: Growth mixture model using double exponential distribution (G=1)
+#--------------------------------------------------------------#
+model {
+      ########################
+      # Model specification for linear growth curve model
+      ########################
+      for (i in 1:N)  {
+          for(t in 1:Time) {
+          
+               y[i,t] ~ ddexp(muy[i,t], tau_dd)
+               muy[i,t] <- LS[i,1]+(t-1)*LS[i,2]
+               #log-likelihood
+               loglik[i,t] <- logdensity.dexp(y[i,t], muy[i,t], tau_dd)
+			
+          } # t
+
+        LS[i,1:2]  ~ dmnorm(beta[1:2], Inv_cov[1:2,1:2])
+
+      } # i
+
+      ########################
+      # priors 
+      ########################
+
+      # --------- tau_dd ---------
+      tau_dd ~ dgamma(0.01,0.01)
+
+      # --------- beta ---------
+      # Intercept
+      beta[1] ~ dnorm(0, 0.001)
+
+      # Slope
+      beta[2] ~ dnorm(0, 0.001)
+
+      # --------- Covariance ---------
+      Inv_cov[1:2,1:2]~dwish(R[1:2,1:2], 2)
+      Cov_b <- inverse(Inv_cov[1:2,1:2])
+      R[1,1]<-1
+      R[2,2]<-1
+      R[2,1]<-R[1,2]
+      R[1,2]<-0
+
+      # --------- reorganize model parameters ---------
+
+      par[1]   <- beta[1]
+      par[2]   <- beta[2]
+      par[3]   <- Cov_b[1,1]
+      par[4]   <- Cov_b[1,2]
+      par[5]   <- Cov_b[2,2]
+      par[6]   <- tau_dd
+
+} # model

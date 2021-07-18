@@ -1,0 +1,54 @@
+#-------------------------------------------------------------#
+#Model: Growth mixture model using normally distributed error
+#--------------------------------------------------------------#
+model {
+      ########################
+      # Model specification for linear growth curve model
+      ########################
+      for (i in 1:N)  {
+          for(t in 1:Time) {
+           
+               y[i,t] ~ dnorm(muy[i,t], pre_sig2)
+               muy[i,t] <- LS[i,1]+(t-1)*LS[i,2]
+               #log-likelihood
+               loglik[i,t] <- logdensity.norm(y[i,t], muy[i,t], pre_sig2)
+			
+          } # t
+
+        LS[i,1:2]  ~ dmnorm(beta[1:2], Inv_cov[1:2,1:2])
+
+      } # i
+
+      ########################
+      # priors 
+      ########################
+
+      # --------- pre_sig2 ---------
+      pre_sig2 ~ dgamma(0.01, 0.01)
+      sig2 <- 1/pre_sig2
+
+      # --------- beta ---------
+      # Intercept
+      beta[1] ~ dnorm(0, 0.001)
+
+      # Slope
+      beta[2] ~ dnorm(0, 0.001)
+
+      # --------- Covariance ---------
+      Inv_cov[1:2,1:2]~dwish(R[1:2,1:2], 2)
+      Cov_b <- inverse(Inv_cov[1:2,1:2])
+      R[1,1]<-1
+      R[2,2]<-1
+      R[2,1]<-R[1,2]
+      R[1,2]<-0
+
+      # --------- reorganize model parameters ---------
+
+      par[1]   <- beta[1]
+      par[2]   <- beta[2]
+      par[3]   <- Cov_b[1,1]
+      par[4]   <- Cov_b[1,2]
+      par[5]   <- Cov_b[2,2]
+      par[6]   <- sig2
+
+} # model

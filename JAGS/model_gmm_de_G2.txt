@@ -1,0 +1,60 @@
+#-------------------------------------------------------------#
+#Model: Growth mixture model using double exponential distribution (G=2)
+#--------------------------------------------------------------#
+model {
+      ### Model specification for linear growth curve model
+      for (i in 1:N)  {
+          # --------- Class membership ---------
+           mem[i] ~ dcat(lambda[1:2])
+
+          for(t in 1:Time) {
+               y[i,t] ~ ddexp(muy[i,t], tau_dd)
+               muy[i,t] <- LS[i,1]+(t-1)*LS[i,2]
+               #log-likelihood
+               loglik[i,t] <- logdensity.dexp(y[i,t], muy[i,t], tau_dd)
+          } # t
+
+        LS[i,1:2]  ~ dmnorm(beta[mem[i],1:2], Inv_cov[1:2,1:2])
+
+      } # i
+
+      ########################
+      # priors 
+      ########################
+
+      # --------- tau_dd ---------
+      tau_dd ~ dgamma(0.01,0.01)
+
+      # --------- beta ---------
+      # Intercept
+      beta[1,1] ~ dnorm(0, 0.001)I(beta[2,1],)
+      beta[2,1] ~ dnorm(0, 0.001)
+      # Slope
+      beta[1,2] ~ dnorm(0, 0.001)
+      beta[2,2] ~ dnorm(0, 0.001)
+
+      # --------- Inv_cov ---------
+      Inv_cov[1:2,1:2]~dwish(R[1:2,1:2], 2)
+      Cov_b <- inverse(Inv_cov[1:2,1:2])
+      R[1,1]<-1
+      R[2,2]<-1
+      R[2,1]<-R[1,2]
+      R[1,2]<-0
+
+      # --------- lambda ---------
+      lambda[1:2] ~ ddirich(alpha[1:2])
+
+      # --------- reorganize model parameters ---------
+
+      par[1]   <- beta[1,1]
+      par[2]   <- beta[1,2]
+      par[3]   <- beta[2,1]
+      par[4]   <- beta[2,2]
+      par[5]   <- Cov_b[1,1]
+      par[6]   <- Cov_b[1,2]
+      par[7]   <- Cov_b[2,2]
+      par[8]   <- lambda[1]
+      par[9]   <- lambda[2]
+      par[10]  <- tau_dd
+
+} # model
